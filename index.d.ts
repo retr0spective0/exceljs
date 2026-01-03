@@ -1364,6 +1364,39 @@ export interface Worksheet {
 	 */
 	getTable(name: string): Table;
 	/**
+	 * Add a pivot table to the worksheet (experimental feature)
+	 *
+	 * Note: Currently supports at most one pivot table per workbook
+	 *
+	 * @param model Pivot table configuration
+	 * @returns The created pivot table object
+	 *
+	 * @example
+	 * ```typescript
+	 * // Simple pivot table with single aggregation
+	 * worksheet.addPivotTable({
+	 *   sourceSheet: dataSheet,
+	 *   rows: ['Product', 'Region'],
+	 *   columns: ['Year'],
+	 *   values: ['Sales', 'Profit'],
+	 *   metric: 'sum'
+	 * });
+	 *
+	 * // Pivot table with multiple aggregations
+	 * worksheet.addPivotTable({
+	 *   sourceSheet: dataSheet,
+	 *   rows: ['Product'],
+	 *   columns: ['Region'],
+	 *   values: [
+	 *     { field: 'Sales', type: 'sum' },
+	 *     { field: 'Sales', type: 'average' },
+	 *     { field: 'Quantity', type: 'count' }
+	 *   ]
+	 * });
+	 * ```
+	 */
+	addPivotTable(model: PivotTableModel): any;
+	/**
 	 * delete table by name or id
 	 */
 	removeTable(name: string): void;
@@ -1906,6 +1939,70 @@ export interface Table extends Required<TableProperties> {
 	 * Remove a column with data
 	 */
 	removeColumns: (colIndex: number, count: number) => void
+}
+
+/**
+ * Aggregation function types for pivot table value fields
+ * Based on OOXML ST_DataConsolidateFunction specification
+ */
+export type PivotTableAggregation =
+	| 'average'
+	| 'count'
+	| 'countNums'
+	| 'max'
+	| 'min'
+	| 'product'
+	| 'stdDev'
+	| 'stdDevP'
+	| 'sum'
+	| 'var'
+	| 'varP';
+
+/**
+ * Value field configuration for pivot tables
+ */
+export interface PivotTableValueField {
+	/**
+	 * The name of the field from the source data (header name)
+	 */
+	field: string;
+	/**
+	 * The aggregation function to apply
+	 * @default 'sum'
+	 */
+	type?: PivotTableAggregation;
+}
+
+/**
+ * Configuration for creating a pivot table
+ */
+export interface PivotTableModel {
+	/**
+	 * The source worksheet containing the data
+	 */
+	sourceSheet: Worksheet;
+	/**
+	 * Field names to use as row labels
+	 * Must correspond to header names in the first row of sourceSheet
+	 */
+	rows: string[];
+	/**
+	 * Field names to use as column labels
+	 * Must correspond to header names in the first row of sourceSheet
+	 */
+	columns: string[];
+	/**
+	 * Value fields to aggregate
+	 * Can be specified as:
+	 * - Array of field names (strings) - uses 'metric' for all
+	 * - Array of PivotTableValueField objects - each with individual aggregation type
+	 */
+	values: string[] | PivotTableValueField[];
+	/**
+	 * Default aggregation function when values are specified as strings
+	 * @default 'sum'
+	 */
+	metric?: PivotTableAggregation;
 }
 
 export namespace config {
